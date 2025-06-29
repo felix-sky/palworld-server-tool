@@ -433,6 +433,7 @@ def structure_guild(filetime: int = -1):
     log("Structuring guilds...")
     if not wsd.get("GroupSaveDataMap"):
         return []
+
     base_camps = structure_base_camp()
     groups = (
         g["value"]["RawData"]["value"]
@@ -440,11 +441,23 @@ def structure_guild(filetime: int = -1):
         if g["value"]["GroupType"]["value"]["value"] == "EPalGroupType::Guild"
     )
     Ticks = wsd["GameTimeSaveData"]["value"]["RealDateTimeTicks"]["value"]
-    guilds_generator = (Guild(g, Ticks, filetime).to_dict() for g in groups)
+
+    valid_guilds = []
+    for g in groups:
+        try:
+            guild_dict = Guild(g, Ticks, filetime).to_dict()
+            valid_guilds.append(guild_dict)
+        except Exception as e:
+
+            log(f"Skipping a guild due to an error: {e}. Raw data might be corrupted.")
+            continue
+
     sorted_guilds = sorted(
-        guilds_generator, key=lambda g: g["base_camp_level"], reverse=True
+        valid_guilds, key=lambda g: g["base_camp_level"], reverse=True
     )
+
     for guild in sorted_guilds:
+        guild["base_camp"] = [] 
         for camp in base_camps:
             if camp["id"] in guild["base_ids"]:
                 guild["base_camp"].append(

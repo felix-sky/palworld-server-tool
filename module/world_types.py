@@ -194,7 +194,8 @@ class Pal:
 
 class Guild:
     def __init__(self, data, real_date_time_ticks, filetime):
-        self.name = data["guild_name"]
+        print(data)
+        self.name = "default"
         self.base_camp_level = data["base_camp_level"]
         self.admin_player_uid = hexuid_to_decimal(data["admin_player_uid"])
         self.players = [
