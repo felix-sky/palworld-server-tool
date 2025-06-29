@@ -29,7 +29,8 @@ def decode_bytes(
         "owner_map_object_instance_id": reader.guid(),
     }
     if not reader.eof():
-        raise Exception("Warning: EOF not reached")
+        # raise Exception("Warning: EOF not reached")
+        data["trailing_unparsed_data"] = [b for b in reader.read_to_end()]
     return data
 
 
@@ -54,5 +55,7 @@ def encode_bytes(p: dict[str, Any]) -> bytes:
     writer.guid(p["group_id_belong_to"])
     writer.ftransform(p["fast_travel_local_transform"])
     writer.guid(p["owner_map_object_instance_id"])
+    if "trailing_unparsed_data" in p:
+        writer.write(bytes(p["trailing_unparsed_data"]))
     encoded_bytes = writer.bytes()
     return encoded_bytes

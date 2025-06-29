@@ -25,7 +25,8 @@ def decode_bytes(
     data["current_battle_type"] = reader.byte()
     data["container_id"] = reader.guid()
     if not reader.eof():
-        raise Exception("Warning: EOF not reached")
+        # raise Exception("Warning: EOF not reached")
+        data["trailing_unparsed_data"] = [b for b in reader.read_to_end()]
     return data
 
 
@@ -47,5 +48,7 @@ def encode_bytes(p: dict[str, Any]) -> bytes:
     writer.byte(p["current_order_type"])
     writer.byte(p["current_battle_type"])
     writer.guid(p["container_id"])
+    if "trailing_unparsed_data" in p:
+        writer.write(bytes(p["trailing_unparsed_data"]))
     encoded_bytes = writer.bytes()
     return encoded_bytes
