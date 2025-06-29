@@ -14,9 +14,12 @@ def decode(
     for group in group_map:
         group_type = group["value"]["GroupType"]["value"]["value"]
         group_bytes = group["value"]["RawData"]["value"]["values"]
-        group["value"]["RawData"]["value"] = decode_bytes(
-            reader, group_bytes, group_type
-        )
+        try:
+            group["value"]["RawData"]["value"] = decode_bytes(
+                reader, group_bytes, group_type
+            )
+        except Exception as e:
+            print(f"Skipping reading 1 group: {e}")
     return value
 
 
