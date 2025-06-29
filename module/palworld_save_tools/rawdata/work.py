@@ -146,7 +146,8 @@ def decode_work_assign_bytes(
     data["fixed"] = reader.u32() > 0
 
     if not reader.eof():
-        raise Exception("Warning: EOF not reached")
+        data["trailing_unparsed_data"] = [b for b in reader.read_to_end()]
+        # raise Exception("Warning: EOF not reached")
 
     return data
 
@@ -178,6 +179,7 @@ def encode(
 
 def encode_bytes(p: dict[str, Any], work_type: str) -> bytes:
     writer = FArchiveWriter()
+    
 
     # Handle base serialization
     if work_type in WORK_BASE_TYPES:
@@ -230,6 +232,8 @@ def encode_bytes(p: dict[str, Any], work_type: str) -> bytes:
 
     # UPalWorkProgressTransformBase->SerializeProperties
     transform_type = p["transform"]["type"]
+    if "trailing_unparsed_data" in p:
+        writer.write(bytes(p["trailing_unparsed_data"]))
     writer.byte(transform_type)
     if transform_type == 1:
         # pre-v2 the transform was deserialised in the wrong order
@@ -253,7 +257,8 @@ def encode_bytes(p: dict[str, Any], work_type: str) -> bytes:
             writer.write(bytes(p["transform"]["raw_data"]))
         else:
             writer.write(p["transform"]["raw_data"])
-
+    if "trailing_unparsed_data" in p:
+        writer.write(bytes(p["trailing_unparsed_data"]))
     encoded_bytes = writer.bytes()
     return encoded_bytes
 

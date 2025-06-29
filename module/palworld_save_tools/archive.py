@@ -439,7 +439,7 @@ class FArchiveReader:
             }
         elif type_name == "EnumProperty":
             enum_type = self.fstring()
-            _id = self.optional_guid()
+            _id = self.optional_guid() 
             enum_value = self.fstring()
             value = {
                 "id": _id,
@@ -473,6 +473,14 @@ class FArchiveReader:
                 "array_type": array_type,
                 "id": self.optional_guid(),
                 "value": self.array_property(array_type, size - 4, path),
+            }
+        elif type_name == "SetProperty":
+            set_type = self.fstring()
+            value = {
+                "set_type": set_type,
+                "empty_u32": self.u32(),
+                "id": self.optional_guid(),
+                "value": self.set_property(),
             }
         elif type_name == "MapProperty":
             key_type = self.fstring()
@@ -508,9 +516,15 @@ class FArchiveReader:
                 "id": _id,
                 "value": values,
             }
+
         else:
             raise Exception(f"Unknown type: {type_name} ({path})")
         value["type"] = type_name
+        return value
+
+    def set_property(self):
+        count = self.u32()
+        value = {"values": [self.properties_until_end() for _ in range(count)]}
         return value
 
     def prop_value(self, type_name: str, struct_type_name: str, path: str):
@@ -905,6 +919,15 @@ class FArchiveWriter:
             array_buf = array_writer.bytes()
             size = len(array_buf)
             self.write(array_buf)
+        elif property_type == "SetProperty":
+            self.fstring(property["set_type"])
+            self.u32(property["empty_u32"])
+            self.optional_guid(property.get("id", None))
+            set_writer = self.copy()
+            set_writer.set_property(property["value"])
+            set_buf = set_writer.bytes()
+            size = len(set_buf)
+            self.write(set_buf)
         elif property_type == "MapProperty":
             self.fstring(property["key_type"])
             self.fstring(property["value_type"])
@@ -986,7 +1009,11 @@ class FArchiveWriter:
             self.write(data_buf)
         else:
             self.array_value(array_type, count, value["values"])
-
+    def set_property(self, value: dict[str, list[Any]]):
+        count = len(value["values"])
+        self.u32(count)
+        for value in value["values"]:
+            self.properties(value)
     def array_value(self, array_type: str, count: int, values: list[Any]):
         for i in range(count):
             if array_type == "IntProperty":
